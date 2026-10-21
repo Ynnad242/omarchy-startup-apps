@@ -27,6 +27,14 @@ If the window doesn't float, add this to `~/.config/hypr/hyprland.lua`:
 o.window({ class = "^org.quickshell$", title = "^Startup Apps$" }, { float = true, center = true, size = { 940, 640 } })
 ```
 
+### Keybinding (optional)
+
+To open and close it with `Super+Z`, add this to `~/.config/hypr/bindings.lua`:
+
+```lua
+o.bind("SUPER + Z", "Startup Apps", [[omarchy-shell shell toggle ynnad.startup-apps '{}']])
+```
+
 ### Run at login
 
 The first time you open Startup Apps it offers a **Run at login** button. It
