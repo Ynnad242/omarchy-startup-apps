@@ -9,9 +9,9 @@ squares, one per workspace, and they open there every time you log in.
   tile it makes, like any other app.
 - **Remove or move**: drag an app off its square, or right-click it, to remove
   it. Drag it onto another square to move it.
-- **Matches your desktop**: colours come from your Omarchy theme and change
-  with `omarchy theme set`, the text uses your `omarchy font set` font, and
-  the corners follow your Hyprland rounding.
+- **Looks like Omarchy**: it's drawn with the Omarchy menu's own colours,
+  font and spacing, so it changes along with the menu when you run
+  `omarchy theme set` or `omarchy font set`.
 - **Quiet start**: apps are moved to their workspace without pulling you along,
   so you stay where you are while everything opens.
 
