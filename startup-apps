@@ -1,0 +1,61 @@
+#!/bin/bash
+# Startup Apps (ynnad.startup-apps): open the apps saved in the panel at login,
+# each on its own workspace. Run once from ~/.config/hypr/autostart.lua:
+#
+#   o.exec_on_start(os.getenv("HOME") .. "/.config/omarchy/plugins/ynnad.startup-apps/startup-apps")
+#
+# Each app is launched, then its first new window whose class contains one of
+# the app's match keys is moved to its workspace without following it. All apps
+# start at once; a window is claimed by one app only.
+
+config=${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/startup-apps.json
+[[ -f $config ]] || exit 0
+
+claims=$(mktemp -d "${XDG_RUNTIME_DIR:-/tmp}/startup-apps.XXXXXX")
+trap 'rm -rf "$claims"' EXIT
+
+# Windows that open before the real one (updaters, splash screens), and
+# Discord's stream pop-out, which never belongs on a startup workspace.
+skip='updater|splash|popout'
+
+# Windows already open are never moved.
+before=$(hyprctl clients -j | jq -c '[.[].address]')
+
+# place <workspace> <keys json array> <command...>
+place() {
+  local ws=$1 keys=$2
+  shift 2
+
+  "$@" >/dev/null 2>&1 &
+
+  # Up to 60s for slow starters like Discord's updater.
+  for _ in $(seq 120); do
+    local addr
+    for addr in $(hyprctl clients -j | jq -r --argjson keys "$keys" --argjson before "$before" --arg skip "$skip" '
+      .[] | select(.address | IN($before[]) | not)
+          | select(.title | test($skip; "i") | not)
+          | select([.class, .initialClass] | map(ascii_downcase) as $c
+                   | any($keys[]; . as $k | $c | any(contains($k))))
+          | .address'); do
+      if mkdir "$claims/$addr" 2>/dev/null; then
+        hyprctl dispatch "hl.dsp.window.move({ window = \"address:$addr\", workspace = \"$ws\", follow = false })" >/dev/null
+        return
+      fi
+    done
+    sleep 0.5
+  done
+
+  logger -t startup-apps "no window for $* (keys $keys) after 60s"
+}
+
+while IFS=$'\x1f' read -r ws desktop tui keys; do
+  if [[ -n $desktop ]]; then
+    place "$ws" "$keys" uwsm-app -- gtk-launch "$desktop.desktop" &
+  elif [[ -n $tui ]]; then
+    read -ra cmd <<<"$tui"
+    place "$ws" "$keys" omarchy-launch-tui "${cmd[@]}" &
+  fi
+done < <(jq -r '.workspaces // {} | to_entries[] | .key as $ws | .value[]
+  | [$ws, (.desktopId // ""), (.tui // ""), (.keys // [] | tojson)] | join("\u001f")' "$config")
+
+wait
