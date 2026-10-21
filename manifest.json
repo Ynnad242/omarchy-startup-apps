@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "ynnad.startup-apps",
+  "name": "Startup Apps",
+  "version": "0.1.0",
+  "author": "ynnad",
+  "description": "Windows-style startup apps with workspaces: drag app icons onto workspaces 1-5 and they open there when you log in.",
+  "kinds": [
+    "panel",
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "panel": "StartupApps.qml",
+    "barWidget": "BarButton.qml"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/Ynnad242/omarchy-startup-apps",
+  "barWidget": {
+    "displayName": "Startup Apps",
+    "description": "Opens Startup Apps, where you choose which apps open on which workspace at login.",
+    "category": "System",
+    "aliases": [
+      "startup",
+      "autostart",
+      "login"
+    ],
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
