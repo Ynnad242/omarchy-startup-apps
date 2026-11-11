@@ -1,39 +1,72 @@
-// The rocket on the bar. Click opens or closes Startup Apps.
-
 import QtQuick
+import Quickshell
+import Quickshell.Io
+import qs.Ui
 
-Item {
+// Rocket icon in the bar, built the same way as the Discord overlay's icon:
+// left-click opens or closes Startup Apps, right-click opens any startup app
+// that isn't already running (`startup-apps --missing`). The icon is lit when
+// apps are set to open at login, and dimmed when nothing is set up.
+BarWidget {
   id: root
+  moduleName: "ynnad.startup-apps"
 
-  // Injected by the bar after load.
-  property var bar: null
-  property string moduleName: "ynnad.startup-apps"
-  property var settings: ({})
+  readonly property string home: Quickshell.env("HOME")
+  readonly property string configPath: (Quickshell.env("XDG_CONFIG_HOME") || home + "/.config") + "/omarchy/startup-apps.json"
+  readonly property string runner: decodeURIComponent(Qt.resolvedUrl("startup-apps").toString().replace(/^file:\/\//, ""))
 
-  readonly property bool vertical: bar ? bar.vertical === true : false
-  readonly property int barSize: bar ? bar.barSize : 26
-  readonly property color foreground: bar ? (bar.barForeground || bar.foreground) : "#ffffff"
+  // How many apps are saved, and on which workspaces.
+  property int appCount: 0
+  property var usedWorkspaces: []
 
-  implicitWidth: vertical ? barSize : barSize + 2
-  implicitHeight: vertical ? barSize + 2 : barSize
+  implicitWidth: button.implicitWidth
+  implicitHeight: button.implicitHeight
 
-  Text {
-    anchors.centerIn: parent
-    // nf-fa-rocket
-    text: String.fromCharCode(0xf135)
-    font.family: "JetBrainsMono Nerd Font"
-    font.pixelSize: Math.round(root.barSize * 0.5)
-    color: root.foreground
-    opacity: mouse.containsMouse ? 1 : 0.85
+  FileView {
+    id: layout
+    path: root.configPath
+    watchChanges: true
+    printErrors: false
+    onFileChanged: reload()
+    onLoaded: {
+      try {
+        const ws = JSON.parse(text()).workspaces || {}
+        let count = 0
+        const used = []
+        Object.keys(ws).sort().forEach(function(k) {
+          const n = (ws[k] || []).length
+          if (n > 0) { count += n; used.push(k) }
+        })
+        root.appCount = count
+        root.usedWorkspaces = used
+      } catch (e) {
+        root.appCount = 0
+        root.usedWorkspaces = []
+      }
+    }
+    onLoadFailed: { root.appCount = 0; root.usedWorkspaces = [] }
   }
 
-  MouseArea {
-    id: mouse
+  BarIconButton {
+    id: button
     anchors.fill: parent
-    hoverEnabled: true
-    cursorShape: Qt.PointingHandCursor
-    onClicked: if (root.bar) root.bar.run("omarchy-shell shell toggle ynnad.startup-apps '{}'")
-    onEntered: if (root.bar && root.bar.showTooltip) root.bar.showTooltip(root, "Startup Apps")
-    onExited: if (root.bar && root.bar.hideTooltip) root.bar.hideTooltip(root)
+    bar: root.bar
+    // nf-fa-rocket
+    text: ""
+    active: root.appCount > 0
+    opacity: root.appCount > 0 ? 1 : 0.4
+    tooltipText: root.appCount > 0
+      ? "Startup Apps: " + root.appCount + (root.appCount === 1 ? " app" : " apps")
+        + " on workspace " + root.usedWorkspaces.join(", ")
+        + " (click to edit, right-click to open any that aren't running)"
+      : "Startup Apps: nothing set up (click to add apps)"
+    onPressed: function(b) {
+      if (!root.bar) return
+      if (b === Qt.RightButton) {
+        if (root.appCount > 0) root.bar.run("'" + root.runner + "' --missing")
+      } else {
+        root.bar.run("omarchy-shell shell toggle ynnad.startup-apps '{}'")
+      }
+    }
   }
 }

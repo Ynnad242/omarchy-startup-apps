@@ -7,6 +7,12 @@
 # Each app is launched, then its first new window whose class contains one of
 # the app's match keys is moved to its workspace without following it. All apps
 # start at once; a window is claimed by one app only.
+#
+#   startup-apps --missing   only open apps that have no window yet (the bar
+#                            icon's right-click), for after closing one by hand.
+
+missing=0
+[[ $1 == --missing ]] && missing=1
 
 config=${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/startup-apps.json
 [[ -f $config ]] || exit 0
@@ -19,7 +25,15 @@ trap 'rm -rf "$claims"' EXIT
 skip='updater|splash|popout'
 
 # Windows already open are never moved.
-before=$(hyprctl clients -j | jq -c '[.[].address]')
+clients=$(hyprctl clients -j)
+before=$(jq -c '[.[].address]' <<<"$clients")
+
+# running <keys json array>: does a window already match one of the keys?
+running() {
+  jq -e --argjson keys "$1" '
+    any(.[]; [.class, .initialClass] | map(ascii_downcase) as $c
+             | any($keys[]; . as $k | $c | any(contains($k))))' <<<"$clients" >/dev/null
+}
 
 # place <workspace> <keys json array> <command...>
 place() {
@@ -49,6 +63,7 @@ place() {
 }
 
 while IFS=$'\x1f' read -r ws desktop tui keys; do
+  (( missing )) && running "$keys" && continue
   if [[ -n $desktop ]]; then
     place "$ws" "$keys" uwsm-app -- gtk-launch "$desktop.desktop" &
   elif [[ -n $tui ]]; then

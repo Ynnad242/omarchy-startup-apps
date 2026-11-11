@@ -21,8 +21,17 @@ squares, one per workspace, and they open there every time you log in.
 omarchy plugin add https://github.com/Ynnad242/omarchy-startup-apps --enable
 ```
 
-This puts a rocket icon on the bar. Click it to open Startup Apps, and click it
-again, or press `Esc`, to close it.
+This puts a rocket icon on the bar, built like Omarchy's own bar icons (and
+the [Discord overlay](https://github.com/Ynnad242/omarchy-discord-overlay)'s):
+
+- **Click** opens Startup Apps. Click again, or press `Esc`, to close it.
+- **Right-click** opens any of your startup apps that aren't running, say
+  after you closed Discord by hand. Apps that already have a window are left
+  alone.
+- The icon is **lit** when apps are set to open at login and **dimmed** when
+  nothing is set up. Hover it to see how many apps are on which workspaces.
+
+The same thing works from a terminal: `startup-apps --missing`.
 
 If the window doesn't float, add this to `~/.config/hypr/hyprland.lua`:
 
