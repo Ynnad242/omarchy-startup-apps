@@ -71,5 +71,3 @@ within 60 seconds is logged to the journal (`journalctl -t startup-apps`).
 ## Requirements
 
 Omarchy with the Quickshell shell and Hyprland's Lua config, plus `jq`.
-
-Built with Claude Code.
